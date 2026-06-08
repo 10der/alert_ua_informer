@@ -1,0 +1,60 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Air Danger Monitor — налаштування",
+        "description": "Моніторинг повітряної тривоги через Telegram канали.\n\nКанали вводяться через кому, без @. Приклад: `dnipro_alerts, kpszsu, war_monitor`",
+        "data": {
+          "city_name": "Назва міста",
+          "alarm_entity": "Entity офіційної тривоги (binary_sensor)",
+          "channels": "Telegram канали (через кому, без @)"
+        },
+        "data_description": {
+          "city_name": "Наприклад: Дніпро, Харків, Київ",
+          "alarm_entity": "Наприклад: binary_sensor.m_dnipro_..._air",
+          "channels": "Наприклад: dnipro_alerts, kpszsu, war_monitor"
+        }
+      }
+    },
+    "error": {
+      "invalid_entity": "Entity не знайдено. Перевірте ID",
+      "no_channels": "Додайте хоча б один Telegram канал"
+    },
+    "abort": {
+      "already_configured": "Вже налаштовано для цього міста"
+    }
+  },
+  "options": {
+    "step": {
+      "menu": {
+        "title": "Керування каналами",
+        "menu_options": {
+          "add_channel": "➕ Додати канал",
+          "edit_channels": "✏️ Переглянути / видалити канали",
+          "finish": "✅ Зберегти і закрити"
+        }
+      },
+      "add_channel": {
+        "title": "Додати Telegram канал",
+        "description": "Введіть slug каналу (частина після t.me/). Наприклад для t.me/dnipro_alerts → `dnipro_alerts`",
+        "data": {
+          "slug": "Slug каналу (без @)",
+          "friendly_name": "Назва (необов'язково)",
+          "local": "🏠 Це канал мого міста (локальний)"
+        },
+        "data_description": {
+          "slug": "Наприклад: dnipro_alerts",
+          "friendly_name": "Якщо порожньо — буде slug",
+          "local": "Локальні канали опитуються кожні 10 сек, глобальні — раз на хвилину"
+        }
+      },
+      "edit_channels": {
+        "title": "Поточні канали",
+        "description": "Зніміть позначку щоб видалити канал",
+        "data": {
+          "keep": "Активні канали"
+        }
+      }
+    }
+  }
+}
