@@ -31,35 +31,37 @@ DEFAULT_ACTIONS: list[dict[str, list[str] | str]] = [
     {
         "key": "missile",
         "words": [
-            "бб",
-            "рн",
             "ракет",
-            "каб",
             "швидкісна",
         ],
+        "strict_words": ["каб", "бб", "рн"],
     },
     {"key": CLEAR_ACTION, "words": ["відбій"]},
 ]
 
 
-def _keywords_to_dict(
+def keywords_to_dict(
     raw: list[dict[str, str | list[str]]],
-) -> dict[str, list[str]]:
+) -> dict[str, dict[str, list[str]]]:
     """Convert UI-friendly keyword list into matcher dict."""
 
-    result: dict[str, list[str]] = {}
+    def _parse_words(item: dict, field: str) -> list[str]:
+        words = item.get(field, [])
+        if isinstance(words, str):
+            words = [w.strip() for w in words.split(",")]
+        return [str(w).strip() for w in words if str(w).strip()]
+
+    result: dict[str, dict[str, list[str]]] = {}
 
     for item in raw:
         key = str(item.get("key", "")).strip()
-        words = item.get("words", [])
-
         if not key:
             continue
 
-        if isinstance(words, str):
-            words = [w.strip() for w in words.split(",")]
-
-        result[key] = [str(word).strip() for word in words if str(word).strip()]
+        result[key] = {
+            "words": _parse_words(item, "words"),
+            "strict_words": _parse_words(item, "strict_words"),
+        }
 
     return result
 

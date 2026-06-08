@@ -1,7 +1,7 @@
 {
   "domain": "air_danger",
   "name": "Air Danger Monitor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/your-repo/air_danger",
   "requirements": ["beautifulsoup4>=4.12.0", "aiohttp>=3.9.0"],
   "dependencies": [],

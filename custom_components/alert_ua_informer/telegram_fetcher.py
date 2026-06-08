@@ -14,39 +14,55 @@ from .const import LOGGER, TG_WEB_BASE
 # Set TG_FETCHER_DEBUG=1 to read from sample_message.txt instead of real fetch
 DEBUG_FROM_FILE = os.getenv("TG_FETCHER_DEBUG") == "1"
 
-def _build_regex(words: list[str]) -> re.Pattern:
+
+def _build_regex(words: list[str], strict_words: list[str] | None = None) -> re.Pattern:
     """Build a regex pattern that matches any of the provided words."""
 
-    escaped = [re.escape(word.strip()) for word in words if word.strip()]
+    parts = []
 
-    if not escaped:
-        return re.compile(r"a^")  # matches nothing
+    if words:
+        escaped = [re.escape(w.strip()) for w in words if w.strip()]
+        parts.append(r"(?<![а-яіїєґА-ЯІЇЄҐa-zA-Z])(?:" + "|".join(escaped) + r")")
 
-    pattern = r"\b(?:" + "|".join(escaped) + r")"
-    return re.compile(pattern, re.IGNORECASE)
+    if strict_words:
+        escaped_strict = [re.escape(w.strip()) for w in strict_words if w.strip()]
+        parts.append(
+            r"(?<![а-яіїєґА-ЯІЇЄҐa-zA-Z])(?:"
+            + "|".join(escaped_strict)
+            + r")(?=[иіауб]?(?:[^а-яіїєґА-ЯІЇЄҐa-zA-Z]|$))"
+        )
+
+    if not parts:
+        return re.compile(r"a^")
+
+    return re.compile("|".join(parts), re.IGNORECASE)
 
 
 @dataclass
 class KeywordMatcher:
     """Generic keyword matcher."""
 
-    keywords: dict[str, list[str]]
+    # {"shahed": {"words": [...], "strict_words": [...]}, ...}
+    keywords: dict[str, dict[str, list[str]]]
     patterns: dict[str, re.Pattern] = field(init=False)
 
     def __post_init__(self) -> None:
         """Compile regex patterns for each keyword list."""
         self.patterns = {
-            key: _build_regex(words)
-            for key, words in self.keywords.items()
+            key: _build_regex(
+                cfg.get("words", []),
+                cfg.get("strict_words", []),
+            )
+            for key, cfg in self.keywords.items()
         }
 
     def matches(self, text: str) -> dict[str, bool]:
         """Return match flags for configured keys."""
 
         return {
-            key: bool(pattern.search(text))
-            for key, pattern in self.patterns.items()
+            key: bool(pattern.search(text)) for key, pattern in self.patterns.items()
         }
+
 
 @dataclass
 class ChannelMessage:
@@ -72,6 +88,7 @@ class ChannelMessage:
         """Return True if key was found in message."""
 
         return self.found.get(key, False)
+
 
 async def fetch_latest(
     session: aiohttp.ClientSession,

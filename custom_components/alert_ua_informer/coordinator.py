@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .config_flow import CLEAR_ACTION, _keywords_to_dict
+from .config_flow import CLEAR_ACTION, keywords_to_dict
 from .const import (
     CHAN_LOCAL,
     CHAN_SLUG,
@@ -61,7 +61,7 @@ class EventFinderDataUpdateCoordinator(DataUpdateCoordinator[EventFinderData]):
 
         raw_keywords = config_entry.data.get(CONF_KEY_WORDS, [])
 
-        keywords = _keywords_to_dict(raw_keywords)
+        keywords = keywords_to_dict(raw_keywords)
         self.actions = [key for key in keywords if key != CLEAR_ACTION]
 
         self._matcher = KeywordMatcher(keywords)
