@@ -103,17 +103,19 @@ async def fetch_latest(
 
     if DEBUG_FROM_FILE:
         msg_id = 777
-        file_path = Path(__file__).parent / "sample_message.txt"
+        file_path = Path(__file__).parent / f"sample_message_{channel}.txt"
 
-        async with await anyio.open_file(file_path, encoding="utf-8") as file:
-            msg_text = await file.read()
+        if file_path.is_file():
+            async with await anyio.open_file(file_path, encoding="utf-8") as file:
+                msg_text = await file.read()
 
-        return ChannelMessage(
-            msg_id=msg_id,
-            text=msg_text,
-            source=channel,
-            matcher=matcher,
-        )
+            return ChannelMessage(
+                msg_id=msg_id,
+                text=msg_text,
+                source=channel,
+                matcher=matcher,
+            )
+        return None
 
     url = TG_WEB_BASE.format(channel=channel)
 
