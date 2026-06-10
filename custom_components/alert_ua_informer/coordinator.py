@@ -1,6 +1,6 @@
 """DataUpdateCoordinator."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -33,16 +33,32 @@ class RuntimeData:
 type EventFinderConfigEntry = ConfigEntry[RuntimeData]
 
 
+@dataclass
+class LastMessage:
+    """Last message seen on a channel."""
+
+    text: str
+    msg_id: int
+    received: datetime
+    matched: list[str] = field(default_factory=list)
+
+
 class EventFinderData:
     """Class to hold data retrieved from the API."""
 
     found: dict[str, datetime] = {}
     debug_info: dict[str, Any] = {}
+    last_messages: dict[str, LastMessage] = {}
 
     def get_ts(self, key: str, default: datetime | None = None) -> datetime | None:
         """Повертає час знайденої дії за ключем."""
 
         return self.found.get(key, default)
+
+    def get_last_message(self, slug: str) -> LastMessage | None:
+        """Повертає останнє повідомлення каналу за slug."""
+
+        return self.last_messages.get(slug)
 
 
 class EventFinderDataUpdateCoordinator(DataUpdateCoordinator[EventFinderData]):
@@ -59,6 +75,9 @@ class EventFinderDataUpdateCoordinator(DataUpdateCoordinator[EventFinderData]):
         self._found: dict[str, datetime] = {}
         self._debug_info: dict[str, Any] = {}
 
+        # Persisted last message per channel slug
+        self._last_messages: dict[str, LastMessage] = {}
+
         raw_keywords = config_entry.data.get(CONF_KEY_WORDS, [])
 
         keywords = keywords_to_dict(raw_keywords)
@@ -74,6 +93,7 @@ class EventFinderDataUpdateCoordinator(DataUpdateCoordinator[EventFinderData]):
 
         self._city = config_entry.data[CONF_CITY_NAME]
         self._channels = config_entry.data.get(CONF_CHANNELS, [])
+        self.channels = self._channels
 
         super().__init__(
             hass,
@@ -117,6 +137,15 @@ class EventFinderDataUpdateCoordinator(DataUpdateCoordinator[EventFinderData]):
                 continue
 
             self._last_ids[slug] = msg.msg_id
+            now = datetime.now(UTC)
+
+            matched = [a for a in self.actions if msg.has(a)]
+            self._last_messages[slug] = LastMessage(
+                text=msg.text,
+                msg_id=msg.msg_id,
+                received=now,
+                matched=matched,
+            )
 
             if not ch[CHAN_LOCAL] and city_lower not in msg.text.lower():
                 continue
@@ -125,16 +154,12 @@ class EventFinderDataUpdateCoordinator(DataUpdateCoordinator[EventFinderData]):
                 self._found.clear()
                 continue
 
-            now = datetime.now(UTC)
-
-            for action in self.actions:
-                if not msg.has(action):
-                    continue
-
+            for action in matched:
                 self._found[action] = now
                 self._debug_info[action] = f"{slug}: {msg.text[:100]}"
 
         event_finder_data.found = self._found.copy()
         event_finder_data.debug_info = self._debug_info.copy()
+        event_finder_data.last_messages = self._last_messages.copy()
 
         return event_finder_data
